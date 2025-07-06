@@ -1,7 +1,10 @@
 import time
-from fastapi import FastAPI
 from pydantic import BaseModel
+
+from fastapi import FastAPI
+from fastapi import Request
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend.utils.logger import logger
 from backend.utils.trace import generate_trace_id
@@ -9,6 +12,15 @@ from backend.llm.pipeline import generate_response_stream
 from backend.utils.cache import clear_huggingface_cache, get_cache_size_mb
 
 app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class QueryRequest(BaseModel):
@@ -19,25 +31,23 @@ class QueryRequest(BaseModel):
 def ask(req: QueryRequest):
     trace_id = generate_trace_id()
     start_time = time.time()
+    
+    logger.info(f"[{trace_id}] Received question: {req.question}")
 
     try:
-        logger.info(f"[{trace_id}] Received question: {req.question}")
         stream = generate_response_stream(req.question)
 
         def token_stream():
-            yield f"[{trace_id}] "
             for chunk in stream:
+                logger.info(f"[{trace_id}] Chunk: {chunk}")
                 yield chunk
 
         logger.info(f"[{trace_id}] Streaming response initialized in {round(time.time() - start_time, 2)}s")
         return StreamingResponse(token_stream(), media_type="text/plain")
 
     except Exception as e:
-        logger.exception(f"[{trace_id}] Failed to generate response")
-        return {
-            "error": "Internal server error",
-            "trace_id": trace_id,
-        }
+        logger.exception(f"[{trace_id}] Error generating response")
+        return {"error": "Failed to generate response"}
 
 # Endpoint: Ask a Question (Single Response)
 # @app.post("/ask")
