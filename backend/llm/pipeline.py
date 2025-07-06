@@ -16,7 +16,7 @@ generator = hf_pipeline("text-generation", model="tiiuae/falcon-rw-1b", max_new_
 def generate_response(query: str) -> str:
     try:
         # Retrieve relevant documents
-        docs = retriever.get_relevant_documents(query)
+        docs = retriever.invoke(query)
         
         # Truncate context to 2000 characters
         context = "\n".join([doc.page_content for doc in docs])[:2000]  # truncate to char limit
@@ -33,7 +33,10 @@ def generate_response(query: str) -> str:
         print(f"Retrieved {len(docs)} documents")
         print(f"Prompt: {prompt[:500]}")
 
-        return result[0]["generated_text"].split("Answer:")[-1].strip()
+        return {
+                    "answer": result[0]["generated_text"].split("Answer:")[-1].strip(),
+                    "retrieved_chunks": [doc.page_content for doc in docs]
+                }
 
     except Exception as e:
         return f"Error generating response: {str(e)}"
