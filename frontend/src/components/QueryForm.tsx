@@ -15,14 +15,24 @@ const QueryForm: React.FC<QueryFormProps> = ({ setAnswer, setContext, setTraceId
     const response = await fetch('http://localhost:8000/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question })
+      body: JSON.stringify({ question }),
     });
 
-    const data = await response.json();
-    setAnswer(data.answer);
-    setContext(data.context);
-    setTraceId(data.trace_id);
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let result = '';
+
+    while (true) {
+      const { value, done } = await reader!.read();
+      if (done) break;
+      result += decoder.decode(value, { stream: true });
+      setAnswer(prev => prev + decoder.decode(value, { stream: true })); // append as it streams
+    }
+
+    setContext([]);  // optional, since it's not part of plain text
+    setTraceId('');  // or set in backend and pass separately if needed
   };
+
 
   return (
     <form onSubmit={handleSubmit}>
