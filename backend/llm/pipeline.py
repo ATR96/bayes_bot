@@ -41,3 +41,28 @@ def generate_response(query: str) -> str:
     except Exception as e:
         return f"Error generating response: {str(e)}"
 
+def generate_response_stream(query: str):
+    try:
+        # Retrieve relevant documents
+        docs = retriever.invoke(query)
+
+        # Truncate context to 2000 characters
+        context = "\n".join([doc.page_content for doc in docs])[:2000]
+
+        # If no documents found, return a default message
+        if not context:
+            yield "No relevant documents found in the knowledge base."
+            return
+
+        # Create a prompt with the context and query
+        prompt = f"Context:\n{context}\n\nQuestion: {query}\nAnswer:"
+        # Generate the response
+        result = generator(prompt, do_sample=True, temperature=0.7)
+
+        text = result[0]["generated_text"].split("Answer:")[-1].strip()
+        for token in text.split():
+            yield token + " "
+
+    except Exception as e:
+        yield f"Error: {str(e)}"
+
