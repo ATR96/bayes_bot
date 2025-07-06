@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pkl
+*.faiss
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# VS Code
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# FAISS Index
+**/faiss_index/
+**/faiss_index_test
+
+# Logs and checkpoints
+logs/
+checkpoints/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Output
+*.log
+*.tmp
